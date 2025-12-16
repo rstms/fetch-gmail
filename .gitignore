@@ -1,0 +1,7 @@
+fetch-gmail
+fetch-gmail.exe
+notes
+cruft
+*.core
+*.log
+*postactivate
