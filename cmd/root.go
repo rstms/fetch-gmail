@@ -31,9 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var cfgFile string
@@ -41,13 +40,31 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Version: "0.0.2",
 	Use:     "fetch-gmail",
-	Short:   "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short:   "fetch gmail messages from IMAP server using OAUTH2 access key",
+	Long: `
+fetch-gmail implements two subcommands:
+
+poll: executes fetchmail for the common use case
+
+plugin command implements a fetchmail plugin
+
+The plugin managages the TLS connnection to the host and transparently passes
+all data other than the outbound LOGIN command.
+
+When an IMAP LOGIN command is encountered, a lookup is performed to obtain
+a valid access token.  (see https://github.com:rstms/tokend)
+
+The command: 
+    'LOGIN <USERNAME> <PASSWORD>'
+is translated to:
+    'AUTHENTICATE XOAUTH2 <TOKEN_HASH>'
+before relay to the IMAP server.
+
+TOKEN_HASH is generated as described here:
+    https://developers.google.com/workspace/gmail/imap/xoauth2-protocol
+`,
 }
+
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
