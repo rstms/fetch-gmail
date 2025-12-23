@@ -12,6 +12,8 @@ type APIClient interface {
 	Post(path string, request, response interface{}, headers *map[string]string) (string, error)
 	Put(path string, request, response interface{}, headers *map[string]string) (string, error)
 	Delete(path string, response interface{}) (string, error)
+	SetFlag(string, bool) error
+	StatusCode() (int, bool)
 }
 
 type CobraCommand interface {

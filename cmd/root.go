@@ -39,8 +39,8 @@ var cfgFile string
 
 var rootCmd = &cobra.Command{
 	Version: "0.1.3",
-	Use: "fetch-gmail",
-	Short: "fetch gmail messages from IMAP server using OAUTH2 access key",
+	Use:     "fetch-gmail",
+	Short:   "fetch gmail messages from IMAP server using OAUTH2 access key",
 	Long: `
 fetch-gmail implements two subcommands:
 gen: generate a fetchmailrc file configured to use the plugin for IMAP

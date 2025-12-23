@@ -31,7 +31,9 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,34 +43,53 @@ import (
 )
 
 var genCmd = &cobra.Command{
-	Use:   "gen USERNAME",
+	Use:   "gen",
 	Short: "generate fetchmail RC file",
 	Long: `
-generate .fetchmailrc for polling GMAIL for USERNAME GMAIL
+generate .fetchmailrc for polling gmail with access_token
 `,
-	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		err := GenerateRC(args[0])
+		ViperSetDefault("gen.user", os.Getenv("USER"))
+		username := ViperGetString("gen.user")
+		rc, err := GenerateRC(username)
 		cobra.CheckErr(err)
+		ViperSetDefault("gen.output", filepath.Join("/home", username, ".fetchmailrc"))
+		filename := ViperGetString("gen.output")
+		switch {
+		case rc == "":
+			os.Exit(1)
+		case filename == "-":
+			fmt.Println(rc)
+		default:
+			err := os.WriteFile(filename, []byte(rc), 0600)
+			cobra.CheckErr(err)
+		}
+		os.Exit(0)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(genCmd)
+	CobraAddCommand(rootCmd, rootCmd, genCmd)
+	OptionString(genCmd, "output", "o", "", "output filename")
+	OptionString(genCmd, "user", "u", "", "username")
 }
 
 type TokenResponse struct {
-	Gmail string
-	Local string
-	Token string
+	Success bool
+	Request string
+	Message string
+	User    string
+	Gmail   string
+	Local   string
+	Token   string
 }
 
 func RequestToken(username string) (*TokenResponse, error) {
 	header := map[string]string{"X-Api-Key": ViperGetString("api_key")}
-	url := fmt.Sprintf("https://%s", ViperGetString("tokend_host"))
+	baseUrl := fmt.Sprintf("https://%s", ViperGetString("tokend_host"))
 	client, err := NewAPIClient(
 		"",
-		url,
+		baseUrl,
 		ViperGetString("cert"),
 		ViperGetString("key"),
 		ViperGetString("ca"),
@@ -78,11 +99,24 @@ func RequestToken(username string) (*TokenResponse, error) {
 		return nil, Fatal(err)
 	}
 	var response TokenResponse
-	_, err = client.Get(fmt.Sprintf("/oauth/token/%s/", username), &response)
+	err = client.SetFlag("require_success", false)
+	err = client.SetFlag("require_json", false)
 	if err != nil {
 		return nil, Fatal(err)
 	}
-	return &response, nil
+	url := fmt.Sprintf("/oauth/token/%s/", username)
+	_, err = client.Get(url, &response)
+	if err != nil {
+		return nil, Fatal(err)
+	}
+	status, ok := client.StatusCode()
+	switch {
+	case ok:
+		return &response, nil
+	case status == http.StatusNotFound:
+		return nil, errors.New(response.Message)
+	}
+	return nil, Fatalf("request failed with status: %d", status)
 }
 
 var DEFAULT_RC_TEMPLATE = `
@@ -106,14 +140,20 @@ func binPath() (string, error) {
 	return fullPath, nil
 }
 
-func GenerateRC(username string) error {
+func GenerateRC(username string) (string, error) {
+
 	token, err := RequestToken(username)
 	if err != nil {
-		return Fatal(err)
+		return "", err
 	}
+
+	if token == nil {
+		return "", nil
+	}
+
 	pluginPath, err := binPath()
 	if err != nil {
-		return Fatal(err)
+		return "", Fatal(err)
 	}
 
 	var templateString string
@@ -122,13 +162,13 @@ func GenerateRC(username string) error {
 	if !IsFile(templateFile) {
 		err := os.WriteFile(templateFile, []byte(DEFAULT_RC_TEMPLATE), 0600)
 		if err != nil {
-			return Fatal(err)
+			return "", Fatal(err)
 		}
 	}
 
 	data, err := os.ReadFile(templateFile)
 	if err != nil {
-		return Fatal(err)
+		return "", Fatal(err)
 	}
 
 	templateString = string(data)
@@ -140,6 +180,5 @@ func GenerateRC(username string) error {
 	for macro, value := range macros {
 		templateString = strings.ReplaceAll(templateString, macro, value)
 	}
-	fmt.Println(templateString)
-	return nil
+	return templateString, nil
 }

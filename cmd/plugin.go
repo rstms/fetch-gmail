@@ -74,6 +74,7 @@ PORT defaults to 'imaps'
 func init() {
 	rootCmd.AddCommand(pluginCmd)
 }
+
 func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 	if Debug {
 		log.Printf("connecting to %s\n", host)
@@ -237,6 +238,7 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 	}
 	return nil
 }
+
 func isAuthFailed(line string) (bool, error) {
 	fields := strings.Fields(line)
 	if len(fields) == 2 && fields[0] == "+" {
@@ -249,6 +251,7 @@ func isAuthFailed(line string) (bool, error) {
 	}
 	return false, nil
 }
+
 func filterLine(line string) (string, bool, error) {
 	fields := strings.Fields(line)
 	if len(fields) > 2 {
