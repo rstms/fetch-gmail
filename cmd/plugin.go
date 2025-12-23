@@ -83,6 +83,7 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 		return Fatal(err)
 	}
 	defer conn.Close()
+	var authPending bool
 	toClient := make(chan string, 1)
 	toServer := make(chan string, 1)
 	var wg sync.WaitGroup
@@ -127,13 +128,26 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 			if Debug {
 				log.Printf("fromServer: '%s'\n%s\n", line, HexDump([]byte(line)))
 			}
+
+			if authPending {
+				failed, err := isAuthFailed(line)
+				if err != nil {
+					log.Printf("isAuthFailed: %v", err)
+					errors = append(errors, err)
+					return
+				}
+				if failed {
+					// immediately after an auth failure, we need to send a blank line
+					fmt.Fprintf(conn, "\r\n")
+				}
+				authPending = false
+			}
+
 			toClient <- scanner.Text()
 		}
 		err := scanner.Err()
 		if err != nil {
-			if Debug {
-				log.Printf("readFromServer failed: %v", err)
-			}
+			log.Printf("readFromServer failed: %v", err)
 			errors = append(errors, err)
 			return
 		}
@@ -159,6 +173,7 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 				if Debug {
 					log.Printf("toServer: '%s'\n%s\n", line, HexDump([]byte(line)))
 				}
+				authPending = false
 				line, changed, err := filterLine(line)
 				if err != nil {
 					if Debug {
@@ -168,10 +183,13 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 					return
 				}
 				if changed {
+					// set authPending if we're sending an AUTHENTICATE
+					authPending = true
 					if Debug {
 						log.Printf("toServer[modified]: '%s'\n%s\n", line, HexDump([]byte(line)))
 					}
 				}
+
 				_, err = fmt.Fprintf(conn, "%s\r\n", line)
 				if err != nil {
 					if Debug {
@@ -224,6 +242,20 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 	}
 	return nil
 }
+
+func isAuthFailed(line string) (bool, error) {
+	fields := strings.Fields(line)
+	if len(fields) == 2 && fields[0] == "+" {
+		message, err := base64.StdEncoding.DecodeString(fields[1])
+		if err != nil {
+			return false, Fatal(err)
+		}
+		log.Printf("Authenticate failed: %s\n", string(message))
+		return true, nil
+	}
+	return false, nil
+}
+
 func filterLine(line string) (string, bool, error) {
 	fields := strings.Fields(line)
 	if len(fields) > 2 {
@@ -231,14 +263,11 @@ func filterLine(line string) (string, bool, error) {
 		case "LOGIN":
 			nonce := fields[0]
 			user := strings.Trim(fields[2], "'\"")
-			token := strings.Trim(fields[3], "'\"")
-			/*
-				response, err := RequestToken(user)
-				if err != nil {
-					return "", false, Fatal(err)
-				}
-			*/
-			formatted := fmt.Sprintf("user=%s\x01auth=Bearer %s\x01\x01", user, token)
+			response, err := RequestToken(user)
+			if err != nil {
+				return "", false, Fatal(err)
+			}
+			formatted := fmt.Sprintf("user=%s\x01auth=Bearer %s\x01\x01", response.Gmail, response.Token)
 			encoded := base64.StdEncoding.EncodeToString([]byte(formatted))
 			return fmt.Sprintf("%s AUTHENTICATE XOAUTH2 %s", nonce, encoded), true, nil
 		}
