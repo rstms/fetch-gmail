@@ -56,6 +56,7 @@ before relay to the IMAP server.
 TOKEN_HASH is generated as described here:
 `,
 }
+
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {

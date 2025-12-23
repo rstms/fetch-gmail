@@ -37,6 +37,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var genCmd = &cobra.Command{
@@ -55,13 +56,16 @@ generate .fetchmailrc for polling GMAIL for USERNAME GMAIL
 func init() {
 	rootCmd.AddCommand(genCmd)
 }
+
 type TokenResponse struct {
 	Gmail string
 	Local string
 	Token string
 }
+
 func RequestToken(username string) (*TokenResponse, error) {
 	header := map[string]string{"X-Api-Key": ViperGetString("api_key")}
+	url := fmt.Sprintf("https://%s", ViperGetString("tokend_host"))
 	client, err := NewAPIClient(
 		"",
 		url,
@@ -80,7 +84,8 @@ func RequestToken(username string) (*TokenResponse, error) {
 	}
 	return &response, nil
 }
-var RC_TEMPLATE = `
+
+var DEFAULT_RC_TEMPLATE = `
 poll imap.gmail.com with proto IMAP
     plugin '${PLUGIN_PATH} plugin imap.gmail.com imaps'
     user '${GMAIL_ADDRESS}' is '${LOCAL_ADDRESS}' here
@@ -88,6 +93,7 @@ poll imap.gmail.com with proto IMAP
 	password AUTH_TOKEN
 	keep
 `
+
 func binPath() (string, error) {
 	bin, err := os.Executable()
 	if err != nil {
@@ -99,6 +105,7 @@ func binPath() (string, error) {
 	}
 	return fullPath, nil
 }
+
 func GenerateRC(username string) error {
 	token, err := RequestToken(username)
 	if err != nil {
@@ -108,40 +115,31 @@ func GenerateRC(username string) error {
 	if err != nil {
 		return Fatal(err)
 	}
-	data := strings.ReplaceAll(RC_TEMPLATE, "${GMAIL_ADDRESS}", token.Gmail)
-	data = strings.ReplaceAll(data, "${LOCAL_ADDRESS}", token.Local)
-	data = strings.ReplaceAll(data, "${PLUGIN_PATH}", pluginPath)
-	fmt.Println(data)
+
+	var templateString string
+	configDir, _ := filepath.Split(viper.ConfigFileUsed())
+	templateFile := filepath.Join(configDir, "rc.template")
+	if !IsFile(templateFile) {
+		err := os.WriteFile(templateFile, []byte(DEFAULT_RC_TEMPLATE), 0600)
+		if err != nil {
+			return Fatal(err)
+		}
+	}
+
+	data, err := os.ReadFile(templateFile)
+	if err != nil {
+		return Fatal(err)
+	}
+
+	templateString = string(data)
+	macros := map[string]string{
+		"${GMAIL_ADDRESS}": token.Gmail,
+		"${LOCAL_ADDRESS}": token.Local,
+		"${PLUGIN_PATH}":   pluginPath,
+	}
+	for macro, value := range macros {
+		templateString = strings.ReplaceAll(templateString, macro, value)
+	}
+	fmt.Println(templateString)
 	return nil
 }
-/*
-#!/usr/bin/env bash
-USERNAME=$1
-	usage() {
-	    echo >&2 "Usage: $(basename $0) USERNAME"
-	    exit 1
-	}
-if [ -z "$USERNAME" ]; then
-	USERNAME=gmail.mailcapsule
-	#usage
-fi
-CFGDIR=~/.config/fetch-gmail
-CERT=$CFGDIR/token.pem
-KEY=$CFGDIR/token.key
-API_KEY=$(cat $CFGDIR/api_key)
-RESULT="$(curl -s --cert $CERT --key $KEY -H "X-Api-Key: $API_KEY" $URL/$USERNAME/)"
-TOKEN="$(jq <<<$RESULT -r .Token)"
-GMAIL_ADDRESS="$(jq <<<$RESULT -r .Gmail)"
-LOCAL_ADDRESS="$(jq <<<$RESULT -r .Local)"
-ENCODED_TOKEN=$(encode_token)
-cat ->~/.fetchmailrc<<EOF
-poll imap.gmail.com with proto IMAP
-	    plugin 'fetchmail-oauth2-plugin %h'
-	    user '$GMAIL_ADDRESS' is '$LOCAL_ADDRESS' here
-		sslproto ''
-		password AUTH_TOKEN
-		keep
-EOF
-chmod 0700 ~/.fetchmailrc
-fetchmail -vvv
-*/
