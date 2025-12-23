@@ -128,7 +128,6 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 			if Debug {
 				log.Printf("fromServer: '%s'\n%s\n", line, HexDump([]byte(line)))
 			}
-
 			if authPending {
 				failed, err := isAuthFailed(line)
 				if err != nil {
@@ -137,12 +136,10 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 					return
 				}
 				if failed {
-					// immediately after an auth failure, we need to send a blank line
 					fmt.Fprintf(conn, "\r\n")
 				}
 				authPending = false
 			}
-
 			toClient <- scanner.Text()
 		}
 		err := scanner.Err()
@@ -183,13 +180,11 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 					return
 				}
 				if changed {
-					// set authPending if we're sending an AUTHENTICATE
 					authPending = true
 					if Debug {
 						log.Printf("toServer[modified]: '%s'\n%s\n", line, HexDump([]byte(line)))
 					}
 				}
-
 				_, err = fmt.Fprintf(conn, "%s\r\n", line)
 				if err != nil {
 					if Debug {
@@ -242,7 +237,6 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 	}
 	return nil
 }
-
 func isAuthFailed(line string) (bool, error) {
 	fields := strings.Fields(line)
 	if len(fields) == 2 && fields[0] == "+" {
@@ -255,7 +249,6 @@ func isAuthFailed(line string) (bool, error) {
 	}
 	return false, nil
 }
-
 func filterLine(line string) (string, bool, error) {
 	fields := strings.Fields(line)
 	if len(fields) > 2 {

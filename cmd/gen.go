@@ -55,15 +55,12 @@ generate .fetchmailrc for polling GMAIL for USERNAME GMAIL
 func init() {
 	rootCmd.AddCommand(genCmd)
 }
-
 type TokenResponse struct {
 	Gmail string
 	Local string
 	Token string
 }
-
 func RequestToken(username string) (*TokenResponse, error) {
-	url := fmt.Sprintf("https://%s", ViperGetString("tokend_host"))
 	header := map[string]string{"X-Api-Key": ViperGetString("api_key")}
 	client, err := NewAPIClient(
 		"",
@@ -83,7 +80,6 @@ func RequestToken(username string) (*TokenResponse, error) {
 	}
 	return &response, nil
 }
-
 var RC_TEMPLATE = `
 poll imap.gmail.com with proto IMAP
     plugin '${PLUGIN_PATH} plugin imap.gmail.com imaps'
@@ -92,7 +88,6 @@ poll imap.gmail.com with proto IMAP
 	password AUTH_TOKEN
 	keep
 `
-
 func binPath() (string, error) {
 	bin, err := os.Executable()
 	if err != nil {
@@ -104,40 +99,31 @@ func binPath() (string, error) {
 	}
 	return fullPath, nil
 }
-
 func GenerateRC(username string) error {
 	token, err := RequestToken(username)
 	if err != nil {
 		return Fatal(err)
 	}
-
 	pluginPath, err := binPath()
 	if err != nil {
 		return Fatal(err)
 	}
-
 	data := strings.ReplaceAll(RC_TEMPLATE, "${GMAIL_ADDRESS}", token.Gmail)
 	data = strings.ReplaceAll(data, "${LOCAL_ADDRESS}", token.Local)
 	data = strings.ReplaceAll(data, "${PLUGIN_PATH}", pluginPath)
-
 	fmt.Println(data)
 	return nil
 }
-
 /*
 #!/usr/bin/env bash
 USERNAME=$1
-
 	usage() {
 	    echo >&2 "Usage: $(basename $0) USERNAME"
 	    exit 1
 	}
-
 if [ -z "$USERNAME" ]; then
-
 	USERNAME=gmail.mailcapsule
 	#usage
-
 fi
 CFGDIR=~/.config/fetch-gmail
 CERT=$CFGDIR/token.pem
@@ -150,13 +136,11 @@ LOCAL_ADDRESS="$(jq <<<$RESULT -r .Local)"
 ENCODED_TOKEN=$(encode_token)
 cat ->~/.fetchmailrc<<EOF
 poll imap.gmail.com with proto IMAP
-
 	    plugin 'fetchmail-oauth2-plugin %h'
 	    user '$GMAIL_ADDRESS' is '$LOCAL_ADDRESS' here
 		sslproto ''
 		password AUTH_TOKEN
 		keep
-
 EOF
 chmod 0700 ~/.fetchmailrc
 fetchmail -vvv

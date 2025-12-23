@@ -43,28 +43,19 @@ var rootCmd = &cobra.Command{
 	Short:   "fetch gmail messages from IMAP server using OAUTH2 access key",
 	Long: `
 fetch-gmail implements two subcommands:
-
 poll: executes fetchmail for the common use case
-
 plugin command implements a fetchmail plugin
-
 The plugin managages the TLS connnection to the host and transparently passes
 all data other than the outbound LOGIN command.
-
 When an IMAP LOGIN command is encountered, a lookup is performed to obtain
-a valid access token.  (see https://github.com:rstms/tokend)
-
 The command: 
     'LOGIN <USERNAME> <PASSWORD>'
 is translated to:
     'AUTHENTICATE XOAUTH2 <TOKEN_HASH>'
 before relay to the IMAP server.
-
 TOKEN_HASH is generated as described here:
-    https://developers.google.com/workspace/gmail/imap/xoauth2-protocol
 `,
 }
-
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
