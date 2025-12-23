@@ -39,21 +39,24 @@ var cfgFile string
 
 var rootCmd = &cobra.Command{
 	Version: "0.1.2",
-	Use:     "fetch-gmail",
-	Short:   "fetch gmail messages from IMAP server using OAUTH2 access key",
+	Use: "fetch-gmail",
+	Short: "fetch gmail messages from IMAP server using OAUTH2 access key",
 	Long: `
 fetch-gmail implements two subcommands:
-poll: executes fetchmail for the common use case
-plugin command implements a fetchmail plugin
-The plugin managages the TLS connnection to the host and transparently passes
-all data other than the outbound LOGIN command.
+gen: generate a fetchmailrc file configured to use the plugin for IMAP
+plugin: fetchmail plugin that makes a TLS connnection to the IMAP server and
+transparently passes through  all data other than the LOGIN command.
+
 When an IMAP LOGIN command is encountered, a lookup is performed to obtain
+an access_token from the tokend server.
+
 The command: 
     'LOGIN <USERNAME> <PASSWORD>'
 is translated to:
     'AUTHENTICATE XOAUTH2 <TOKEN_HASH>'
-before relay to the IMAP server.
+
 TOKEN_HASH is generated as described here:
+https://developers.google.com/workspace/gmail/imap/xoauth2-protocol
 `,
 }
 
