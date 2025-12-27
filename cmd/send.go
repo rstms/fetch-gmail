@@ -96,7 +96,7 @@ func (a *GmailAuth) Next(fromServer []byte, more bool) ([]byte, error) {
 }
 
 func Getvar(name string) (string, error) {
-	value := os.Getenv("name")
+	value := os.Getenv(name)
 	if value == "" {
 		return "", Fatalf("null %s", name)
 	}
