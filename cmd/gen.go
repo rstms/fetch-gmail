@@ -139,23 +139,18 @@ func binPath() (string, error) {
 	}
 	return fullPath, nil
 }
-
 func GenerateRC(username string) (string, error) {
-
 	token, err := RequestToken(username)
 	if err != nil {
 		return "", err
 	}
-
 	if token == nil {
 		return "", nil
 	}
-
 	pluginPath, err := binPath()
 	if err != nil {
 		return "", Fatal(err)
 	}
-
 	var templateString string
 	configDir, _ := filepath.Split(viper.ConfigFileUsed())
 	templateFile := filepath.Join(configDir, "rc.template")
@@ -165,12 +160,10 @@ func GenerateRC(username string) (string, error) {
 			return "", Fatal(err)
 		}
 	}
-
 	data, err := os.ReadFile(templateFile)
 	if err != nil {
 		return "", Fatal(err)
 	}
-
 	templateString = string(data)
 	macros := map[string]string{
 		"${GMAIL_ADDRESS}": token.Gmail,

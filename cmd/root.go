@@ -46,17 +46,13 @@ fetch-gmail implements two subcommands:
 gen: generate a fetchmailrc file configured to use the plugin for IMAP
 plugin: fetchmail plugin that makes a TLS connnection to the IMAP server and
 transparently passes through  all data other than the LOGIN command.
-
 When an IMAP LOGIN command is encountered, a lookup is performed to obtain
 an access_token from the tokend server.
-
 The command: 
     'LOGIN <USERNAME> <PASSWORD>'
 is translated to:
     'AUTHENTICATE XOAUTH2 <TOKEN_HASH>'
-
 TOKEN_HASH is generated as described here:
-https://developers.google.com/workspace/gmail/imap/xoauth2-protocol
 `,
 }
 

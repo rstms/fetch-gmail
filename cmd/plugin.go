@@ -74,7 +74,6 @@ PORT defaults to 'imaps'
 func init() {
 	rootCmd.AddCommand(pluginCmd)
 }
-
 func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 	if Debug {
 		log.Printf("connecting to %s\n", host)
@@ -238,7 +237,6 @@ func Relay(host string, ifp io.Reader, ofp io.Writer) error {
 	}
 	return nil
 }
-
 func isAuthFailed(line string) (bool, error) {
 	fields := strings.Fields(line)
 	if len(fields) == 2 && fields[0] == "+" {
@@ -251,7 +249,13 @@ func isAuthFailed(line string) (bool, error) {
 	}
 	return false, nil
 }
-
+func FormatToken(gmailAddress, token string) string {
+	return fmt.Sprintf("user=%s\x01auth=Bearer %s\x01\x01", gmailAddress, token)
+}
+func EncodeToken(gmailAddress, token string) string {
+	formatted := FormatToken(gmailAddress, token)
+	return base64.StdEncoding.EncodeToString([]byte(formatted))
+}
 func filterLine(line string) (string, bool, error) {
 	fields := strings.Fields(line)
 	if len(fields) > 2 {
@@ -263,8 +267,7 @@ func filterLine(line string) (string, bool, error) {
 			if err != nil {
 				return "", false, Fatal(err)
 			}
-			formatted := fmt.Sprintf("user=%s\x01auth=Bearer %s\x01\x01", response.Gmail, response.Token)
-			encoded := base64.StdEncoding.EncodeToString([]byte(formatted))
+			encoded := EncodeToken(response.Gmail, response.Token)
 			return fmt.Sprintf("%s AUTHENTICATE XOAUTH2 %s", nonce, encoded), true, nil
 		}
 	}
