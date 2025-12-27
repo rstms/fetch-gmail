@@ -79,6 +79,7 @@ type GmailAuth struct {
 func NewGmailAuth(address, token string) *GmailAuth {
 	return &GmailAuth{Address: address, Token: token}
 }
+
 func (a *GmailAuth) Start(info *smtp.ServerInfo) (string, []byte, error) {
 	if ViperGetBool("debug") {
 		log.Printf("Start: info: %+v\n", info)
@@ -86,39 +87,43 @@ func (a *GmailAuth) Start(info *smtp.ServerInfo) (string, []byte, error) {
 	authString := FormatToken(a.Address, a.Token)
 	return "XOAUTH2", []byte(authString), nil
 }
+
 func (a *GmailAuth) Next(fromServer []byte, more bool) ([]byte, error) {
 	if more {
 		return nil, Fatalf("unexpected challenge: %v", string(fromServer))
 	}
 	return nil, nil
 }
+
+func Getvar(name string) (string, error) {
+	value := os.Getenv("name")
+	if value == "" {
+		return "", Fatalf("null %s", name)
+	}
+	if ViperGetBool("debug") {
+		log.Printf("%s=%s\n", name, value)
+	}
+	return value, nil
+}
+
 func SendGmail(reader io.Reader) (int, error) {
-	debug := ViperGetBool("debug")
-	username := os.Getenv("LOGNAME")
-	if username == "" {
-		return ERROR_CONFIG, Fatalf("null LOGNAME")
-	}
-	if debug {
-		log.Printf("LOGNAME=%s\n", username)
-	}
-	recipient := os.Getenv("RECIPIENT")
-	if recipient == "" {
-		return ERROR_CONFIG, Fatalf("null RECIPIENT")
-	}
-	if debug {
-		log.Printf("RECIPIENT=%s\n", recipient)
-	}
-	sender := os.Getenv("SENDER")
-	if sender == "" {
-		return ERROR_CONFIG, Fatalf("null SENDER")
-	}
-	if debug {
-		log.Printf("SENDER=%s\n", sender)
-	}
-	token, err := RequestToken(username)
+	_, err := Getvar("LOGNAME")
 	if err != nil {
-		return ERROR_TEMPFAIL, Fatal(err)
+		return ERROR_OSFAIL, Fatal(err)
 	}
+	recipient, err := Getvar("RECIPIENT")
+	if err != nil {
+		return ERROR_OSFAIL, Fatal(err)
+	}
+	sender, err := Getvar("SENDER")
+	if err != nil {
+		return ERROR_OSFAIL, Fatal(err)
+	}
+	token, err := RequestToken(sender)
+	if err != nil {
+		return ERROR_OSFAIL, Fatal(err)
+	}
+	debug := ViperGetBool("debug")
 	if debug {
 		log.Printf("TOKEN: %s\n", FormatJSON(token))
 	}
