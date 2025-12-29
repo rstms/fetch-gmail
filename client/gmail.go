@@ -42,7 +42,7 @@ import (
 	"strings"
 )
 
-const Version = "0.1.8"
+const Version = "0.1.9"
 
 var FROM_PATTERN = regexp.MustCompile(`^From:[[:space:]]+(.*)[[:space:]]+<([^>]+)>.*$`)
 var HEADER_PATTERN = regexp.MustCompile(`^([^[:space:]]+):[[:space:]]+[^[:space:]]+.*`)

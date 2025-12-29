@@ -39,7 +39,7 @@ import (
 var cfgFile string
 
 var rootCmd = &cobra.Command{
-	Version: "0.1.8",
+	Version: "0.1.9",
 	Use:     "fetch-gmail",
 	Short:   "fetch gmail messages from IMAP server using OAUTH2 access key",
 	Long: `
