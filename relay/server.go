@@ -17,7 +17,7 @@ import (
 	"syscall"
 )
 
-const Version = "0.1.10"
+const Version = "0.1.11"
 
 const (
 	SMTP_MAX_LINE = 1000
