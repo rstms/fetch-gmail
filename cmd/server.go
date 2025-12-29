@@ -54,5 +54,5 @@ performing a tokend lookup with the MAIL FROM address for GMAIL OAUTH2
 func init() {
 	CobraAddCommand(rootCmd, rootCmd, serverCmd)
 	OptionString(rootCmd, "address", "a", "127.0.0.1", "SMTP listen address")
-	OptionInt(rootCmd, "port", "p", 2525, "SMTP listen port")
+	OptionInt(rootCmd, "port", "p", 10465, "SMTP listen port")
 }
