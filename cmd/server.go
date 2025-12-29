@@ -43,7 +43,7 @@ Listen on localhost for outgoing SMTP connections.  Relay mail to GMAIL,
 performing a tokend lookup with the MAIL FROM address for GMAIL OAUTH2
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		listenHost := ViperGetString("address") + ":" + ViperGetString("port")
+		listenHost := ViperGetString("server.address") + ":" + ViperGetString("server.port")
 		server, err := relay.NewServer(listenHost)
 		cobra.CheckErr(err)
 		err = server.Run()
