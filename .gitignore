@@ -5,4 +5,5 @@ cruft
 *.core
 *.log
 *postactivate
-cmd/testdata/config
+*.pem
+*.key

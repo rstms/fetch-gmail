@@ -1,2 +1,19 @@
-fetch-gmail:
-  verbose: true
+fetch_gmail:
+  debug: false
+  verbose: false
+  tokend_client:
+    tokend_host: webmail.$TEST_EMAIL_DOMAIN
+    api_key: $TEST_API_KEY
+    cert: ../testdata/token.pem
+    key: ../testdata/token.key
+    ca: /etc/ssl/keymaster.pem
+  smtp_server:
+    username: relay
+    password_hash: $TEST_RELAY_HASH
+  test:
+    relay_command: ssh -N -R 10025:127.0.0.1:10025 $TEST_MAILSERVER
+    listen_host: 127.0.0.1:10025
+    user: relay
+    pass: $TEST_RELAY_PASSWORD 
+    mail_from: $TEST_GMAIL_ADDRESS@$TEST_EMAIL_DOMAIN
+    rcpt_to: $TEST_TARGET_ADDRESS

@@ -31,13 +31,12 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/rstms/fetch-gmail/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -74,51 +73,6 @@ func init() {
 	OptionString(genCmd, "user", "u", "", "username")
 }
 
-type TokenResponse struct {
-	Success bool
-	Request string
-	Message string
-	User    string
-	Gmail   string
-	Local   string
-	Token   string
-}
-
-func RequestToken(username string) (*TokenResponse, error) {
-	header := map[string]string{"X-Api-Key": ViperGetString("api_key")}
-	baseUrl := fmt.Sprintf("https://%s", ViperGetString("tokend_host"))
-	client, err := NewAPIClient(
-		"",
-		baseUrl,
-		ViperGetString("cert"),
-		ViperGetString("key"),
-		ViperGetString("ca"),
-		&header,
-	)
-	if err != nil {
-		return nil, Fatal(err)
-	}
-	var response TokenResponse
-	err = client.SetFlag("require_success", false)
-	err = client.SetFlag("require_json", false)
-	if err != nil {
-		return nil, Fatal(err)
-	}
-	url := fmt.Sprintf("/oauth/token/%s/", username)
-	_, err = client.Get(url, &response)
-	if err != nil {
-		return nil, Fatal(err)
-	}
-	status, ok := client.StatusCode()
-	switch {
-	case ok:
-		return &response, nil
-	case status == http.StatusNotFound:
-		return nil, errors.New(response.Message)
-	}
-	return nil, Fatalf("request failed with status: %d", status)
-}
-
 var DEFAULT_RC_TEMPLATE = `
 poll imap.gmail.com with proto IMAP
     plugin '${PLUGIN_PATH} plugin imap.gmail.com imaps'
@@ -140,7 +94,7 @@ func binPath() (string, error) {
 	return fullPath, nil
 }
 func GenerateRC(username string) (string, error) {
-	token, err := RequestToken(username)
+	token, err := client.RequestToken(username)
 	if err != nil {
 		return "", err
 	}

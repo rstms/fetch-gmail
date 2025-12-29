@@ -1,0 +1,6 @@
+poll imap.gmail.com with proto IMAP
+    plugin '${PLUGIN_PATH} plugin imap.gmail.com imaps'
+    user '${GMAIL_ADDRESS}' is '${LOCAL_ADDRESS}' here
+	sslproto ''
+	password AUTH_TOKEN
+	keep

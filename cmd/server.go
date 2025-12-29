@@ -31,39 +31,28 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"github.com/rstms/cobra-daemon"
+	"github.com/rstms/fetch-gmail/relay"
 	"github.com/spf13/cobra"
-	"os"
 )
 
-var cfgFile string
-
-var rootCmd = &cobra.Command{
-	Version: "0.1.7",
-	Use:     "fetch-gmail",
-	Short:   "fetch gmail messages from IMAP server using OAUTH2 access key",
+var serverCmd = &cobra.Command{
+	Use:   "server",
+	Short: "run an SMTP server relaying to GMAIL",
 	Long: `
-fetch-gmail implements two subcommands:
-gen: generate a fetchmailrc file configured to use the plugin for IMAP
-plugin: fetchmail plugin that makes a TLS connnection to the IMAP server and
-transparently passes through  all data other than the LOGIN command.
-When an IMAP LOGIN command is encountered, a lookup is performed to obtain
-an access_token from the tokend server.
-The command: 
-    'LOGIN <USERNAME> <PASSWORD>'
-is translated to:
-    'AUTHENTICATE XOAUTH2 <TOKEN_HASH>'
-TOKEN_HASH is generated as described here:
+Listen on localhost for outgoing SMTP connections.  Relay mail to GMAIL,
+performing a tokend lookup with the MAIL FROM address for GMAIL OAUTH2
 `,
+	Run: func(cmd *cobra.Command, args []string) {
+		listenHost := ViperGetString("address") + ":" + ViperGetString("port")
+		server, err := relay.NewServer(listenHost)
+		cobra.CheckErr(err)
+		err = server.Run()
+		cobra.CheckErr(err)
+	},
 }
 
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
-}
 func init() {
-	CobraInit(rootCmd)
-	daemon.AddDaemonCommands(rootCmd, "server")
+	CobraAddCommand(rootCmd, rootCmd, serverCmd)
+	OptionString(rootCmd, "address", "a", "127.0.0.1", "SMTP listen address")
+	OptionInt(rootCmd, "port", "p", 2525, "SMTP listen port")
 }

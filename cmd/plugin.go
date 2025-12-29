@@ -35,6 +35,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"github.com/rstms/fetch-gmail/client"
 	"github.com/spf13/cobra"
 	"io"
 	"log"
@@ -249,13 +250,6 @@ func isAuthFailed(line string) (bool, error) {
 	}
 	return false, nil
 }
-func FormatToken(gmailAddress, token string) string {
-	return fmt.Sprintf("user=%s\x01auth=Bearer %s\x01\x01", gmailAddress, token)
-}
-func EncodeToken(gmailAddress, token string) string {
-	formatted := FormatToken(gmailAddress, token)
-	return base64.StdEncoding.EncodeToString([]byte(formatted))
-}
 func filterLine(line string) (string, bool, error) {
 	fields := strings.Fields(line)
 	if len(fields) > 2 {
@@ -263,11 +257,11 @@ func filterLine(line string) (string, bool, error) {
 		case "LOGIN":
 			nonce := fields[0]
 			user := strings.Trim(fields[2], "'\"")
-			response, err := RequestToken(user)
+			response, err := client.RequestToken(user)
 			if err != nil {
 				return "", false, Fatal(err)
 			}
-			encoded := EncodeToken(response.Gmail, response.Token)
+			encoded := client.EncodeToken(response.Gmail, response.Token)
 			return fmt.Sprintf("%s AUTHENTICATE XOAUTH2 %s", nonce, encoded), true, nil
 		}
 	}

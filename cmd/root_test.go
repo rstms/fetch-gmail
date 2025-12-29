@@ -1,18 +1,17 @@
 package cmd
 
 import (
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"testing"
 )
 
 func initTestConfig(t *testing.T) {
-	viper.SetConfigFile(filepath.Join("testdata", "config", "config.yaml"))
-	err := viper.ReadInConfig()
-	require.Nil(t, err)
+	Init("fetch_gmail", rootCmd.Version, filepath.Join("..", "testdata", "config.yaml"))
 }
 
 func TestRoot(t *testing.T) {
 	initTestConfig(t)
+	apiKey := ViperGetString("tokend_client.api_key")
+	require.NotEmpty(t, apiKey)
 }
