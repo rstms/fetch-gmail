@@ -46,6 +46,7 @@ type Server struct {
 	cert               string
 	key                string
 	wg                 sync.WaitGroup
+	shutdownLock       sync.Mutex
 }
 
 func NewServer(listenHost string) (*Server, error) {
@@ -78,6 +79,20 @@ func NewServer(listenHost string) (*Server, error) {
 }
 
 func (s *Server) shutdown(caller string) {
+
+	if s.debug {
+		log.Printf("shutdown[%s]: awaiting lock", caller)
+	}
+	s.shutdownLock.Lock()
+	if s.debug {
+		log.Printf("shutdown[%s]: got lock", caller)
+	}
+	defer func() {
+		if s.debug {
+			log.Printf("shutdown[%s]: releasing lock", caller)
+		}
+		s.shutdownLock.Unlock()
+	}()
 
 	if s.listener != nil {
 		log.Printf("shutdown[%s]: closing listener", caller)
