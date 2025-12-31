@@ -47,18 +47,20 @@ exit 0 if valid token is returned
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		username := ViperGetString("user")
-		quiet := ViperGetBool("quiet")
-		token, err := client.RequestToken(username)
+		_, err := client.RequestToken(username)
 		if err == nil {
-			if !quiet {
-				fmt.Println(FormatJSON(token))
+			if ViperGetBool("json") {
+				fmt.Println(FormatJSON(true))
+			} else {
+				os.Exit(0)
 			}
-			os.Exit(0)
+		} else {
+			if ViperGetBool("json") {
+				fmt.Println(FormatJSON(false))
+			} else {
+				os.Exit(1)
+			}
 		}
-		if quiet {
-			os.Exit(1)
-		}
-		cobra.CheckErr(err)
 	},
 }
 

@@ -70,5 +70,6 @@ func init() {
 	cobra.CheckErr(err)
 	OptionString(rootCmd, "user", "u", currentUser.Username, "username")
 	OptionSwitch(rootCmd, "quiet", "q", "suppress output")
+	OptionSwitch(rootCmd, "json", "j", "json output")
 	daemon.AddDaemonCommands(rootCmd, "server")
 }
