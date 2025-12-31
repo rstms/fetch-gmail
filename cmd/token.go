@@ -31,44 +31,37 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"github.com/rstms/cobra-daemon"
-	"github.com/spf13/cobra"
+	"fmt"
 	"os"
-	"os/user"
+
+	"github.com/rstms/fetch-gmail/client"
+	"github.com/spf13/cobra"
 )
 
-var cfgFile string
-
-var rootCmd = &cobra.Command{
-	Version: "0.1.11",
-	Use:     "fetch-gmail",
-	Short:   "fetch gmail messages from IMAP server using OAUTH2 access key",
+var tokenCmd = &cobra.Command{
+	Use:   "token",
+	Short: "request gmail auth_token",
 	Long: `
-fetch-gmail implements two subcommands:
-gen: generate a fetchmailrc file configured to use the plugin for IMAP
-plugin: fetchmail plugin that makes a TLS connnection to the IMAP server and
-transparently passes through  all data other than the LOGIN command.
-When an IMAP LOGIN command is encountered, a lookup is performed to obtain
-an access_token from the tokend server.
-The command: 
-    'LOGIN <USERNAME> <PASSWORD>'
-is translated to:
-    'AUTHENTICATE XOAUTH2 <TOKEN_HASH>'
-TOKEN_HASH is generated as described here:
+request gmail token from tokend
+exit 0 if valid token is returned
 `,
+	Run: func(cmd *cobra.Command, args []string) {
+		username := ViperGetString("user")
+		quiet := ViperGetBool("quiet")
+		token, err := client.RequestToken(username)
+		if err == nil {
+			if !quiet {
+				fmt.Println(FormatJSON(token))
+			}
+			os.Exit(0)
+		}
+		if quiet {
+			os.Exit(1)
+		}
+		cobra.CheckErr(err)
+	},
 }
 
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
-}
 func init() {
-	CobraInit(rootCmd)
-	currentUser, err := user.Current()
-	cobra.CheckErr(err)
-	OptionString(rootCmd, "user", "u", currentUser.Username, "username")
-	OptionSwitch(rootCmd, "quiet", "q", "suppress output")
-	daemon.AddDaemonCommands(rootCmd, "server")
+	CobraAddCommand(rootCmd, rootCmd, tokenCmd)
 }

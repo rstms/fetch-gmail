@@ -48,8 +48,7 @@ var genCmd = &cobra.Command{
 generate .fetchmailrc for polling gmail with access_token
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		ViperSetDefault("gen.user", os.Getenv("USER"))
-		username := ViperGetString("gen.user")
+		username := ViperGetString("user")
 		rc, err := GenerateRC(username)
 		cobra.CheckErr(err)
 		ViperSetDefault("gen.output", filepath.Join("/home", username, ".fetchmailrc"))
@@ -70,7 +69,6 @@ generate .fetchmailrc for polling gmail with access_token
 func init() {
 	CobraAddCommand(rootCmd, rootCmd, genCmd)
 	OptionString(genCmd, "output", "o", "", "output filename")
-	OptionString(genCmd, "user", "u", "", "username")
 }
 
 var DEFAULT_RC_TEMPLATE = `
@@ -93,6 +91,7 @@ func binPath() (string, error) {
 	}
 	return fullPath, nil
 }
+
 func GenerateRC(username string) (string, error) {
 	token, err := client.RequestToken(username)
 	if err != nil {
